@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, send_file, flash, redirect, url_for
+from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 from config import Config
 from convertisseurs import get_convertisseur
 
@@ -8,6 +8,14 @@ app.secret_key = "transformateur-secret"
 
 config = Config()
 
+@app.route("/stats")
+def stats():
+    config = Config()
+    return jsonify ({
+        "nb_conversions": config.get_nb_conversions(),
+        "conversions_disponibles": Config.CONVERSIONS_DISPONIBLES,
+        "formats_supportes": Config.FORMATS_SUPPORTES
+    })
 
 @app.route("/")
 def index():
@@ -44,6 +52,7 @@ def convertir():
         flash(f"Erreur lors de la conversion : {e}")
         return redirect(url_for("index"))
 
+    config.incrementer()
     nom_base = fichier.filename.rsplit(".", 1)[0]
     nom_sortie = f"{nom_base}.{format_cible}"
     chemin_sortie = os.path.join(config.dossier_upload, nom_sortie)

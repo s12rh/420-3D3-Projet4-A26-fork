@@ -21,3 +21,10 @@ class Config:
     def __init__(self):
         self.dossier_upload = os.path.join(os.path.dirname(__file__), "uploads")
         os.makedirs(self.dossier_upload, exist_ok=True)
+        self.nb_conversions = 0
+    
+    def incrementer(self):
+        self.nb_conversions += 1
+    
+    def get_nb_conversions(self):
+        return self.nb_conversions
