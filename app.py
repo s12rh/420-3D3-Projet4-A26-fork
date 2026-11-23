@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 from config import Config
 from convertisseurs import get_convertisseur
+import sqlite3
 
 app = Flask(__name__)
 app.secret_key = "transformateur-secret"
