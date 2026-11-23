@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 from config import Config
-from convertisseurs import get_convertisseur
+from convertisseurs import FabriqueConvertisseur
 
 app = Flask(__name__)
 app.secret_key = "transformateur-secret"
@@ -46,7 +46,7 @@ def convertir():
         return redirect(url_for("index"))
 
     try:
-        convertisseur = get_convertisseur(extension, format_cible)
+        convertisseur = FabriqueConvertisseur.creer(extension, format_cible)
         resultat = convertisseur.convertir(contenu.decode("utf-8"))
     except Exception as e:
         flash(f"Erreur lors de la conversion : {e}")

@@ -3,20 +3,28 @@ import json
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 import io
+from abc import ABC, abstractmethod
 
 
 # ---------------------------------------------------------------------------
 # Classes de conversion — sans hiérarchie commune
-# ---------------------------------------------------------------------------
+# ---------------------------------------
+# ------------------------------------
 
-class CsvVersJson:
+class Convertisseur(ABC):
+    @abstractmethod
+    def convertir(self, contenu: str) -> str:
+        pass
+
+
+class CsvVersJson(Convertisseur):
     def convertir(self, contenu: str) -> str:
         lecteur = csv.DictReader(io.StringIO(contenu))
         lignes = list(lecteur)
         return json.dumps(lignes, ensure_ascii=False, indent=2)
 
 
-class JsonVersCsv:
+class JsonVersCsv(Convertisseur):
     def convertir(self, contenu: str) -> str:
         donnees = json.loads(contenu)
         if not donnees:
@@ -28,7 +36,7 @@ class JsonVersCsv:
         return sortie.getvalue()
 
 
-class CsvVersXml:
+class CsvVersXml(Convertisseur):
     def convertir(self, contenu: str) -> str:
         lecteur = csv.DictReader(io.StringIO(contenu))
         racine = ET.Element("donnees")
@@ -41,7 +49,7 @@ class CsvVersXml:
         return xml.dom.minidom.parseString(brut).toprettyxml(indent="  ")
 
 
-class XmlVersCsv:
+class XmlVersCsv(Convertisseur):
     def convertir(self, contenu: str) -> str:
         racine = ET.fromstring(contenu)
         enregistrements = list(racine)
@@ -56,7 +64,7 @@ class XmlVersCsv:
         return sortie.getvalue()
 
 
-class JsonVersXml:
+class JsonVersXml(Convertisseur):
     def convertir(self, contenu: str) -> str:
         donnees = json.loads(contenu)
         racine = ET.Element("donnees")
@@ -69,7 +77,7 @@ class JsonVersXml:
         return xml.dom.minidom.parseString(brut).toprettyxml(indent="  ")
 
 
-class XmlVersJson:
+class XmlVersJson(Convertisseur):
     def convertir(self, contenu: str) -> str:
         racine = ET.fromstring(contenu)
         donnees = []
@@ -78,7 +86,7 @@ class XmlVersJson:
         return json.dumps(donnees, ensure_ascii=False, indent=2)
 
 
-class MarkdownVersHtml:
+class MarkdownVersHtml(Convertisseur):
     def convertir(self, contenu: str) -> str:
         lignes = contenu.splitlines()
         html = []
@@ -121,22 +129,26 @@ class MarkdownVersHtml:
 
 # ---------------------------------------------------------------------------
 # Fonction de sélection du convertisseur — if/elif en cascade
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# ------
 
-def get_convertisseur(format_source: str, format_cible: str):
-    if format_source == "csv" and format_cible == "json":
-        return CsvVersJson()
-    elif format_source == "json" and format_cible == "csv":
-        return JsonVersCsv()
-    elif format_source == "csv" and format_cible == "xml":
-        return CsvVersXml()
-    elif format_source == "xml" and format_cible == "csv":
-        return XmlVersCsv()
-    elif format_source == "json" and format_cible == "xml":
-        return JsonVersXml()
-    elif format_source == "xml" and format_cible == "json":
-        return XmlVersJson()
-    elif format_source == "md" and format_cible == "html":
-        return MarkdownVersHtml()
-    else:
-        raise ValueError(f"Conversion non supportée : {format_source} → {format_cible}")
+class FabriqueConvertisseur:
+    _convertisseurs: dict[tuple[str, str], type[Convertisseur]] = {
+        ("csv", "json"): CsvVersJson,
+        ("json", "csv"): JsonVersCsv,
+        ("csv", "xml"):  CsvVersXml,
+        ("xml", "csv"):  XmlVersCsv,
+        ("json", "xml"): JsonVersXml,
+        ("xml", "json"): XmlVersJson,
+        ("md",  "html"): MarkdownVersHtml,
+    }
+
+    @classmethod
+    def creer(cls, format_source: str, format_cible: str) -> Convertisseur:
+        cle = (format_source, format_cible)
+        classe = cls._convertisseurs.get(cle)
+        if classe is None:
+            raise ValueError(f"Conversion non supportée : {format_source} → {format_cible}")
+        return classe()
+    
+
